@@ -2,7 +2,7 @@ apiVersion: v2
 name: qualys-ca
 description: Qualys Cloud Agent for Worker Nodes
 type: application
-version: 1.0.0
+version: 1.0.4
 appVersion: "6.1.0-25"
 keywords:
   - qualys
