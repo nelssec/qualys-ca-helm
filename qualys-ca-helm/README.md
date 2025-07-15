@@ -1,1 +1,0 @@
-# Qualys-CA Helm Chart
