@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  namespace: {{ .Values.namespace.name }}
   name: {{ include "qualys-ca.fullname" . }}
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
@@ -12,6 +13,7 @@ spec:
     {{- toYaml .Values.updateStrategy | nindent 4 }}
   template:
     metadata:
+  namespace: {{ .Values.namespace.name }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

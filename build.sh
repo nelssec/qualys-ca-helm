@@ -1,75 +1,95 @@
-cat > charts/qualys-ca/templates/daemonset.yaml << 'EOF'
-apiVersion: apps/v1
-kind: DaemonSet
+# Update values.yaml to include namespace
+cat > charts/qualys-ca/values.yaml << 'EOF'
+replicaCount: 1
+
+# Namespace configuration
+namespace:
+  create: true
+  name: "qualys"
+
+image:
+  repository: nelssec/qualys-cloud-agent
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+config:
+  serverUri: "https://qagpublic.qg2.apps.qualys.com/CloudAgent/"
+  logLevel: "3"
+
+secrets:
+  existingSecret: "qualys-credentials"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext:
+  privileged: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 25%
+
+hostNetwork: false
+hostPID: true
+privileged: false
+
+# Volume mounts for Qualys agent
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+
+volumes:
+  - name: tmp
+    emptyDir: {}
+EOF
+
+# Create namespace template
+cat > charts/qualys-ca/templates/namespace.yaml << 'EOF'
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: {{ include "qualys-ca.fullname" . }}
+  name: {{ .Values.namespace.name }}
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
-spec:
-  selector:
-    matchLabels:
-      {{- include "qualys-ca.selectorLabels" . | nindent 6 }}
-  updateStrategy:
-    {{- toYaml .Values.updateStrategy | nindent 4 }}
-  template:
-    metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      labels:
-        {{- include "qualys-ca.selectorLabels" . | nindent 8 }}
-    spec:
-      hostPID: {{ .Values.hostPID }}
-      restartPolicy: Always
-      serviceAccountName: {{ include "qualys-ca.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: ACTIVATIONID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.existingSecret }}
-                  key: activationId
-            - name: CUSTOMERID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.existingSecret }}
-                  key: customerId
-          envFrom:
-            - configMapRef:
-                name: {{ include "qualys-ca.fullname" . }}-config
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          volumeMounts:
-            {{- toYaml .Values.volumeMounts | nindent 12 }}
-      volumes:
-        {{- toYaml .Values.volumes | nindent 8 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+{{- end }}
 EOF
+
+# Update all templates to use the namespace
+sed -i '' '/metadata:/a\
+  namespace: {{ .Values.namespace.name }}
+' charts/qualys-ca/templates/*.yaml
+
+# Update Chart.yaml version
+sed -i '' 's/version: 1.0.1/version: 1.0.3/' charts/qualys-ca/Chart.yaml
 
 # Commit and release
 git add .
-git commit -m "Update security context to match working Qualys requirements"
+git commit -m "Add namespace support - deploy to qualys namespace"
 git push origin main
 
 # Create new release
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.3
+git push origin v1.0.3

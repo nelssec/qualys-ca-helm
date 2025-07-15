@@ -1,8 +1,13 @@
 replicaCount: 1
 
+# Namespace configuration
+namespace:
+  create: true
+  name: "qualys"
+
 image:
-  repository: qualys/qualys-cloud-agent
-  tag: "1.0.0"
+  repository: nelssec/qualys-cloud-agent
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 config:
@@ -22,19 +27,10 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
-  fsGroup: 1000
+podSecurityContext: {}
 
 securityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-    - ALL
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 1000
+  privileged: true
 
 resources:
   limits:
@@ -54,5 +50,14 @@ updateStrategy:
     maxUnavailable: 25%
 
 hostNetwork: false
-hostPID: false
+hostPID: true
 privileged: false
+
+# Volume mounts for Qualys agent
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+
+volumes:
+  - name: tmp
+    emptyDir: {}
