@@ -19,6 +19,8 @@ spec:
       labels:
         {{- include "qualys-ca.selectorLabels" . | nindent 8 }}
     spec:
+      hostPID: {{ .Values.hostPID }}
+      restartPolicy: Always
       serviceAccountName: {{ include "qualys-ca.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -45,11 +47,9 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: tmp
-              mountPath: /tmp
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
       volumes:
-        - name: tmp
-          emptyDir: {}
+        {{- toYaml .Values.volumes | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -62,5 +62,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      hostNetwork: {{ .Values.hostNetwork }}
-      hostPID: {{ .Values.hostPID }}

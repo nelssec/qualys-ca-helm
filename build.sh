@@ -1,42 +1,75 @@
-mkdir -p .github/workflows
-
-cat > .github/workflows/release.yml << 'EOF'
-name: Release Charts
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Install Helm
-        uses: azure/setup-helm@v3
-
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+cat > charts/qualys-ca/templates/daemonset.yaml << 'EOF'
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "qualys-ca.fullname" . }}
+  labels:
+    {{- include "qualys-ca.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "qualys-ca.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{- toYaml .Values.updateStrategy | nindent 4 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "qualys-ca.selectorLabels" . | nindent 8 }}
+    spec:
+      hostPID: {{ .Values.hostPID }}
+      restartPolicy: Always
+      serviceAccountName: {{ include "qualys-ca.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: ACTIVATIONID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret }}
+                  key: activationId
+            - name: CUSTOMERID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret }}
+                  key: customerId
+          envFrom:
+            - configMapRef:
+                name: {{ include "qualys-ca.fullname" . }}-config
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 EOF
 
-git add .github/workflows/release.yml
-git commit -m "Add Release Charts workflow"
+# Commit and release
+git add .
+git commit -m "Update security context to match working Qualys requirements"
 git push origin main
 
-# Delete and recreate tag to trigger the workflow
-git tag -d v1.0.0
-git push origin --delete v1.0.0
-git tag v1.0.0
-git push origin v1.0.0
+# Create new release
+git tag v1.0.1
+git push origin v1.0.1
