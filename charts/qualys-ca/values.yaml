@@ -56,3 +56,8 @@ updateStrategy:
 hostNetwork: false
 hostPID: false
 privileged: false
+
+# Namespace configuration
+namespace:
+  create: true
+  name: "qualys"

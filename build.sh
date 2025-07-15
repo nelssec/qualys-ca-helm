@@ -1,8 +1,28 @@
+# Check what the sed command did to the templates
+cat charts/qualys-ca/templates/daemonset.yaml | head -10
+
+# Let's revert to v1.0.2 and manually add namespace support
+git checkout v1.0.2
+
+# Manually update each template with proper namespace placement
+cat > charts/qualys-ca/templates/namespace.yaml << 'EOF'
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace.name }}
+  labels:
+    {{- include "qualys-ca.labels" . | nindent 4 }}
+{{- end }}
+EOF
+
+# Update daemonset.yaml manually with proper indentation
 cat > charts/qualys-ca/templates/daemonset.yaml << 'EOF'
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ include "qualys-ca.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
 spec:
@@ -65,11 +85,30 @@ spec:
       {{- end }}
 EOF
 
-# Commit and release
+# Update other templates manually...
+# Update configmap.yaml
+sed -i '' 's/metadata:/metadata:\
+  namespace: {{ .Values.namespace.name }}/' charts/qualys-ca/templates/configmap.yaml
+
+# Update serviceaccount.yaml  
+sed -i '' 's/metadata:/metadata:\
+  namespace: {{ .Values.namespace.name }}/' charts/qualys-ca/templates/serviceaccount.yaml
+
+# Add namespace config to values.yaml
+cat >> charts/qualys-ca/values.yaml << 'EOF'
+
+# Namespace configuration
+namespace:
+  create: true
+  name: "qualys"
+EOF
+
+# Bump version and commit
+sed -i '' 's/version: 1.0.2/version: 1.0.4/' charts/qualys-ca/Chart.yaml
+
 git add .
-git commit -m "Update security context to match working Qualys requirements"
+git commit -m "Add namespace support with proper YAML formatting"
 git push origin main
 
-# Create new release
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.4
+git push origin v1.0.4
