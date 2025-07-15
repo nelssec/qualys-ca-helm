@@ -71,5 +71,5 @@ git commit -m "Update security context to match working Qualys requirements"
 git push origin main
 
 # Create new release
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.2
+git push origin v1.0.2
