@@ -1,14 +1,13 @@
 replicaCount: 1
 
-# Namespace configuration
 namespace:
-  create: false  # Don't create by default, use existing or let user create
+  create: true
   name: "qualys"
 
 image:
   repository: nelssec/qualys-cloud-agent
   tag: "latest"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 config:
   serverUri: "https://qagpublic.qg2.apps.qualys.com/CloudAgent/"
@@ -53,7 +52,6 @@ hostNetwork: false
 hostPID: true
 privileged: false
 
-# Volume mounts for Qualys agent
 volumeMounts:
   - name: tmp
     mountPath: /tmp
