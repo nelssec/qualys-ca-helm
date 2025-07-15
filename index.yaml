@@ -1,0 +1,28 @@
+apiVersion: v1
+entries:
+  qualys-ca:
+  - annotations:
+      category: Security
+      licenses: Apache-2.0
+    apiVersion: v2
+    appVersion: 6.1.0-25
+    created: "2025-07-15T02:23:07.937336311Z"
+    description: Qualys Cloud Agent for Worker Nodes
+    digest: 1f9a20be87e07116e8d9c5f13f6ab6443e45bfa87c83e21d9f51fcc3b5de34ef
+    home: https://github.com/nelssec/qualys-ca-helm
+    keywords:
+    - qualys
+    - security
+    - vulnerability
+    - scanning
+    maintainers:
+    - email: anelson@qualys.com
+      name: Andrew Nelson
+    name: qualys-ca
+    sources:
+    - https://github.com/nelssec/qualys-ca-helm
+    type: application
+    urls:
+    - https://github.com/nelssec/qualys-ca-helm/releases/download/qualys-ca-1.0.0/qualys-ca-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-07-15T02:23:07.937342693Z"
