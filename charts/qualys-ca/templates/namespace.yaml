@@ -1,8 +1,11 @@
 {{- if .Values.namespace.create }}
+{{- $existingNamespace := lookup "v1" "Namespace" "" .Values.namespace.name }}
+{{- if not $existingNamespace }}
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Values.namespace.name }}
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
+{{- end }}
 {{- end }}
