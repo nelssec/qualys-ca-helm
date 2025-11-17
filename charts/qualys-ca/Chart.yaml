@@ -1,8 +1,8 @@
 apiVersion: v2
 name: qualys-ca
-description: Qualys Cloud Agent for Worker Nodes
+description: Qualys Cloud Agent for Worker Nodes with Auto-Update Support
 type: application
-version: 1.0.0
+version: 2.0.0
 appVersion: "6.1.0-25"
 keywords:
   - qualys
@@ -18,3 +18,24 @@ maintainers:
 annotations:
   category: Security
   licenses: Apache-2.0
+  artifacthub.io/changes: |
+    - kind: added
+      description: Automatic update mechanism with CronJob for rolling restarts
+    - kind: added
+      description: Liveness and readiness probes for health monitoring
+    - kind: added
+      description: Pod Disruption Budget for high availability
+    - kind: added
+      description: RBAC resources for auto-update CronJob
+    - kind: changed
+      description: Image pull policy changed to Always for auto-updates
+    - kind: changed
+      description: Tolerations now tolerate all taints by default
+    - kind: improved
+      description: Comprehensive README with auto-update documentation
+    - kind: improved
+      description: Resource configuration and optimization
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/recommendations: |
+    - url: https://www.qualys.com/docs/
+  artifacthub.io/containsSecurityUpdates: "false"

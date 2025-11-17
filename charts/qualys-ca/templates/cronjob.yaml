@@ -1,0 +1,48 @@
+{{- if .Values.autoUpdate.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "qualys-ca.fullname" . }}-auto-update
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "qualys-ca.labels" . | nindent 4 }}
+    app.kubernetes.io/component: auto-update
+spec:
+  schedule: {{ .Values.autoUpdate.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.autoUpdate.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.autoUpdate.failedJobsHistoryLimit }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "qualys-ca.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: auto-update
+        spec:
+          serviceAccountName: {{ include "qualys-ca.fullname" . }}-auto-update
+          restartPolicy: {{ .Values.autoUpdate.restartPolicy }}
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting auto-update process for Qualys Cloud Agent..."
+              echo "Current time: $(date)"
+
+              # Perform rolling restart of the DaemonSet
+              # This will trigger pod recreation, which will pull the latest image if available
+              kubectl rollout restart daemonset/{{ include "qualys-ca.fullname" . }} -n {{ .Values.namespace.name }}
+
+              # Wait for rollout to complete
+              kubectl rollout status daemonset/{{ include "qualys-ca.fullname" . }} -n {{ .Values.namespace.name }} --timeout=5m
+
+              echo "Auto-update completed successfully"
+              echo "DaemonSet status:"
+              kubectl get daemonset {{ include "qualys-ca.fullname" . }} -n {{ .Values.namespace.name }}
+            resources:
+              {{- toYaml .Values.autoUpdate.resources | nindent 14 }}
+{{- end }}

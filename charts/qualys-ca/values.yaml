@@ -8,11 +8,59 @@ namespace:
 image:
   repository: nelssec/qualys-cloud-agent
   tag: "latest"
-  pullPolicy: IfNotPresent
+  # Set to Always to automatically pull new images when pods restart
+  # This ensures the latest cloud agent version is always used
+  pullPolicy: Always
 
 config:
   serverUri: "https://qagpublic.qg2.apps.qualys.com/CloudAgent/"
   logLevel: "3"
+
+# Auto-update configuration
+# Enables automatic rolling restart of DaemonSet to pull latest cloud agent images
+autoUpdate:
+  enabled: true
+  # Cron schedule for checking and pulling new images (default: every 6 hours)
+  schedule: "0 */6 * * *"
+  # Number of successful jobs to keep in history
+  successfulJobsHistoryLimit: 3
+  # Number of failed jobs to keep in history
+  failedJobsHistoryLimit: 3
+  # Restart policy for the job
+  restartPolicy: OnFailure
+  # Resource limits for the update job
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Health check probes
+# Helps Kubernetes determine if the cloud agent is running properly
+healthChecks:
+  enabled: true
+  liveness:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - "ps aux | grep -v grep | grep -q qualys-cloud-agent"
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - "ps aux | grep -v grep | grep -q qualys-cloud-agent"
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
 
 secrets:
   existingSecret: "qualys-credentials"
@@ -40,9 +88,27 @@ resources:
     cpu: 250m
     memory: 256Mi
 
+# Node selector to target specific nodes
 nodeSelector: {}
-tolerations: []
+
+# Tolerations to allow pods to run on tainted nodes
+# By default, tolerate common taints to ensure coverage across all nodes
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+
+# Affinity rules for pod placement
 affinity: {}
+
+# Pod Disruption Budget to ensure availability during updates
+podDisruptionBudget:
+  enabled: true
+  # Minimum number of pods that must be available (use either minAvailable or maxUnavailable)
+  minAvailable: 1
+  # Maximum number of pods that can be unavailable
+  # maxUnavailable: 1
 
 updateStrategy:
   type: RollingUpdate
