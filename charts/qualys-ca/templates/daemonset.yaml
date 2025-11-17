@@ -48,6 +48,12 @@ spec:
                 name: {{ include "qualys-ca.fullname" . }}-config
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.healthChecks.enabled }}
+          livenessProbe:
+            {{- toYaml .Values.healthChecks.liveness | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.healthChecks.readiness | nindent 12 }}
+          {{- end }}
           volumeMounts:
             {{- toYaml .Values.volumeMounts | nindent 12 }}
       volumes:
