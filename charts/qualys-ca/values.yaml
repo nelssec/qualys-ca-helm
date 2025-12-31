@@ -35,10 +35,9 @@ tolerations:
 
 affinity: {}
 
-networkPolicy:
-  enabled: true
+priorityClassName: "system-node-critical"
 
-podSecurityPolicy:
+networkPolicy:
   enabled: true
 
 serviceAccount:

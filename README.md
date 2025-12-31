@@ -111,6 +111,7 @@ helm install qualys-agent ./charts/qualys-ca \
 | `config.serverUri` | Qualys platform endpoint | `""` |
 | `config.logLevel` | Log verbosity (0-5) | `"3"` |
 | `networkPolicy.enabled` | Enable NetworkPolicy | `true` |
+| `priorityClassName` | Pod priority class | `system-node-critical` |
 | `resources.requests.cpu` | CPU request | `100m` |
 | `resources.requests.memory` | Memory request | `128Mi` |
 | `resources.limits.cpu` | CPU limit | `500m` |
@@ -167,21 +168,39 @@ flowchart LR
         PSS[Pod Security Standards]
         NP[NetworkPolicy]
         RBAC[Minimal RBAC]
+        SA[ServiceAccount Hardening]
     end
 
     subgraph access["Host Access"]
         MM[Minimal Mounts]
         NS[nsenter]
+        CAP[Capability Controls]
     end
 
     controls --> access
 ```
 
+### CIS Benchmark Compliance
+
+| Control | Implementation |
+|---------|---------------|
+| **5.1.3** - ServiceAccount token mount | `automountServiceAccountToken: false` |
+| **5.1.5** - Default ServiceAccount | Dedicated ServiceAccount per deployment |
+| **5.2.1** - Privileged containers | Required for host installation (documented) |
+| **5.2.7** - Capability restrictions | Drops ALL, adds only SYS_ADMIN, SYS_CHROOT, SYS_PTRACE |
+| **5.2.8** - HostPID | Required for nsenter (documented) |
+| **5.3.1** - NetworkPolicy | Egress restricted to 443/TCP and 53/UDP,TCP |
+
+### Security Features
+
 - **Pod Security Standards**: Namespace enforces `privileged` PSS
-- **NetworkPolicy**: Egress restricted to HTTPS (443) and DNS (53)
+- **NetworkPolicy**: Egress restricted to HTTPS (443) and DNS (53) only
+- **Immutable Secrets**: Credentials stored as immutable secrets
 - **Minimal Mounts**: Specific paths only, not full filesystem
 - **Credentials Protected**: Never logged, config files mode 600
-- **RBAC**: Read-only access to nodes and pods
+- **RBAC**: Read-only access to nodes and pods only
+- **Priority Class**: `system-node-critical` ensures security agent runs
+- **Capability Drop**: Drops ALL capabilities, adds only required ones
 
 ## Verify Installation
 

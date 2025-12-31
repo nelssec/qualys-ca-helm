@@ -18,17 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pod Security Standards**: Namespace labels for privileged PSS enforcement
 - **Secret Template**: Can now create secrets via Helm values or use existing secrets
 - **RBAC**: ClusterRole and ClusterRoleBinding for node/pod read access
+- **Priority Class**: Uses `system-node-critical` for security agent reliability
+- **hostPID**: Enabled for nsenter host access
 
 ### Removed
 - **CronJob Auto-Update**: No longer needed - agent updates via new image builds
 - **PodDisruptionBudget**: Simplified deployment model
 - **Auto-Update ServiceAccount**: Removed with CronJob
+- **PodSecurityPolicy**: Deprecated in K8s 1.21+, removed dead config
 
-### Security
+### Security (CIS Benchmark Hardening)
+- **Capabilities**: Drops ALL, adds only SYS_ADMIN, SYS_CHROOT, SYS_PTRACE
+- **ServiceAccount**: `automountServiceAccountToken: false` on both SA and Pod
+- **Secrets**: Marked as immutable to prevent tampering
+- **hostNetwork**: Explicitly set to false
+- **readOnlyRootFilesystem**: Explicitly documented (false required for installation)
 - Credentials never logged (redacted output)
 - Config files set to mode 600
 - Minimal host mounts (not full filesystem)
-- Dropped NET_RAW and MKNOD capabilities
 
 ## [2.0.0] - 2025-11-17
 
