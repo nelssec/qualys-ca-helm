@@ -1,17 +1,20 @@
 apiVersion: v2
 name: qualys-ca
-description: Qualys Cloud Agent for Worker Nodes with Auto-Update Support
+description: Qualys Cloud Agent Kubernetes Bootstrapper - Installs agent on worker nodes
 type: application
-version: 2.0.0
-appVersion: "6.1.0-25"
+version: 3.0.0
+appVersion: "2.0.0"
 keywords:
   - qualys
   - security
   - vulnerability
   - scanning
+  - agent
+  - bootstrapper
 home: https://github.com/nelssec/qualys-ca-helm
 sources:
   - https://github.com/nelssec/qualys-ca-helm
+  - https://github.com/nelssec/qualys-cloudagentbuilder
 maintainers:
   - name: Andrew Nelson
     email: anelson@qualys.com
@@ -19,23 +22,18 @@ annotations:
   category: Security
   licenses: Apache-2.0
   artifacthub.io/changes: |
-    - kind: added
-      description: Automatic update mechanism with CronJob for rolling restarts
-    - kind: added
-      description: Liveness and readiness probes for health monitoring
-    - kind: added
-      description: Pod Disruption Budget for high availability
-    - kind: added
-      description: RBAC resources for auto-update CronJob
     - kind: changed
-      description: Image pull policy changed to Always for auto-updates
-    - kind: changed
-      description: Tolerations now tolerate all taints by default
-    - kind: improved
-      description: Comprehensive README with auto-update documentation
-    - kind: improved
-      description: Resource configuration and optimization
+      description: Switched to bootstrapper model - installs agent on host nodes
+    - kind: added
+      description: Multi-architecture support (x86_64 and ARM64)
+    - kind: added
+      description: NetworkPolicy for egress restrictions
+    - kind: added
+      description: Pod Security Standards labels
+    - kind: added
+      description: Minimal mount strategy for security
+    - kind: removed
+      description: CronJob auto-update (agent updates via new image builds)
+    - kind: security
+      description: Credentials never logged, config files mode 600
   artifacthub.io/prerelease: "false"
-  artifacthub.io/recommendations: |
-    - url: https://www.qualys.com/docs/
-  artifacthub.io/containsSecurityUpdates: "false"

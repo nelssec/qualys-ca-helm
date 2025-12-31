@@ -2,16 +2,48 @@
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/qualys-ca)](https://artifacthub.io/packages/search?repo=qualys-ca)
 
-This Helm chart deploys the Qualys Cloud Agent as a DaemonSet on Kubernetes clusters for continuous security vulnerability scanning and compliance monitoring.
+Helm chart for deploying Qualys Cloud Agent on Kubernetes worker nodes using the bootstrapper model.
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph k8s["Kubernetes Cluster"]
+        subgraph cp["Control Plane"]
+            DS[DaemonSet Controller]
+        end
+
+        subgraph config["Configuration"]
+            SEC[Secret]
+            CM[ConfigMap]
+        end
+
+        subgraph nodes["Worker Nodes"]
+            subgraph n1["Node 1 - Ubuntu x64"]
+                P1[Bootstrapper Pod] --> A1[Qualys Agent]
+            end
+            subgraph n2["Node 2 - RHEL ARM64"]
+                P2[Bootstrapper Pod] --> A2[Qualys Agent]
+            end
+        end
+    end
+
+    subgraph qualys["Qualys Cloud"]
+        API[Platform API]
+    end
+
+    DS --> P1 & P2
+    SEC & CM --> P1 & P2
+    A1 & A2 --> API
+```
 
 ## Features
 
-- **Automatic Updates**: Built-in CronJob automatically restarts the DaemonSet to pull the latest cloud agent images
-- **Health Monitoring**: Liveness and readiness probes ensure agent availability
-- **High Availability**: Pod Disruption Budget maintains coverage during cluster maintenance
-- **Security**: Runs in dedicated namespace with proper RBAC permissions
-- **Flexible Configuration**: Comprehensive values for customization
-- **Rolling Updates**: Zero-downtime updates with configurable rolling strategy
+- **Host Installation**: Installs Qualys Cloud Agent directly on worker nodes
+- **Multi-Architecture**: Supports x86_64 and ARM64 nodes
+- **Universal OS Support**: Ubuntu, Debian, RHEL, CentOS, Amazon Linux, CoreOS
+- **Secure**: NetworkPolicy, Pod Security Standards, credentials never logged
+- **Idempotent**: Safe to redeploy, restart, or scale
 
 ## Prerequisites
 
@@ -21,268 +53,201 @@ This Helm chart deploys the Qualys Cloud Agent as a DaemonSet on Kubernetes clus
 
 ## Installation
 
-### 1. Create the Qualys credentials secret
+### Quick Start
 
 ```bash
-kubectl create namespace qualys
-
-kubectl create secret generic qualys-credentials \
-  --from-literal=activationId=YOUR_ACTIVATION_ID \
-  --from-literal=customerId=YOUR_CUSTOMER_ID \
-  -n qualys
-```
-
-### 2. Install the Helm chart
-
-```bash
-# Add the Helm repository (if published)
-helm repo add qualys-ca https://nelssec.github.io/qualys-ca-helm
+helm repo add qualys https://nelssec.github.io/qualys-ca-helm
 helm repo update
 
-# Install the chart
-helm install qualys-ca qualys-ca/qualys-ca -n qualys
+helm install qualys-agent qualys/qualys-ca \
+  --namespace qualys \
+  --create-namespace \
+  --set credentials.activationId="YOUR_ACTIVATION_ID" \
+  --set credentials.customerId="YOUR_CUSTOMER_ID" \
+  --set config.serverUri="https://qagpublic.qg1.apps.qualys.com/CloudAgent/"
 ```
 
-Or install directly from source:
+### From Source
 
 ```bash
 git clone https://github.com/nelssec/qualys-ca-helm.git
 cd qualys-ca-helm
-helm install qualys-ca ./charts/qualys-ca -n qualys
+
+helm install qualys-agent ./charts/qualys-ca \
+  --namespace qualys \
+  --create-namespace \
+  --set credentials.activationId="YOUR_ACTIVATION_ID" \
+  --set credentials.customerId="YOUR_CUSTOMER_ID" \
+  --set config.serverUri="https://qagpublic.qg1.apps.qualys.com/CloudAgent/"
 ```
 
-### 3. Verify the installation
+### Using Existing Secret
 
 ```bash
-kubectl get daemonset -n qualys
-kubectl get pods -n qualys
-kubectl get cronjob -n qualys
-```
+# Create secret first
+kubectl create namespace qualys
+kubectl create secret generic qualys-credentials \
+  --namespace qualys \
+  --from-literal=ACTIVATION_ID="YOUR_ACTIVATION_ID" \
+  --from-literal=CUSTOMER_ID="YOUR_CUSTOMER_ID"
 
-## Auto-Update Feature
-
-The chart includes an automated update mechanism that ensures your cloud agents are always running the latest version.
-
-### How It Works
-
-1. **Image Pull Policy**: Set to `Always` to ensure Kubernetes pulls the latest image when pods restart
-2. **Scheduled CronJob**: Runs every 6 hours (configurable) to perform rolling restarts
-3. **Rolling Restart**: Triggers `kubectl rollout restart` on the DaemonSet
-4. **Graceful Updates**: Respects Pod Disruption Budget and rolling update strategy
-
-### Configuration
-
-```yaml
-autoUpdate:
-  enabled: true                           # Enable/disable auto-updates
-  schedule: "0 */6 * * *"                # Cron schedule (every 6 hours)
-  successfulJobsHistoryLimit: 3          # Keep last 3 successful jobs
-  failedJobsHistoryLimit: 3              # Keep last 3 failed jobs
-```
-
-### Monitoring Auto-Updates
-
-```bash
-# Check CronJob status
-kubectl get cronjob -n qualys
-
-# View recent auto-update jobs
-kubectl get jobs -n qualys
-
-# Check logs from the latest job
-kubectl logs -n qualys job/qualys-ca-auto-update-<timestamp>
-
-# Watch DaemonSet rollout
-kubectl rollout status daemonset/qualys-ca -n qualys
-```
-
-### Custom Update Schedule
-
-Update the schedule using standard cron syntax:
-
-```bash
-# Update every 12 hours
-helm upgrade qualys-ca ./charts/qualys-ca \
-  --set autoUpdate.schedule="0 */12 * * *" \
-  -n qualys
-
-# Update daily at 2 AM
-helm upgrade qualys-ca ./charts/qualys-ca \
-  --set autoUpdate.schedule="0 2 * * *" \
-  -n qualys
-
-# Disable auto-updates
-helm upgrade qualys-ca ./charts/qualys-ca \
-  --set autoUpdate.enabled=false \
-  -n qualys
+# Install with existing secret
+helm install qualys-agent ./charts/qualys-ca \
+  --namespace qualys \
+  --set credentials.existingSecret="qualys-credentials" \
+  --set config.serverUri="https://qagpublic.qg1.apps.qualys.com/CloudAgent/"
 ```
 
 ## Configuration
 
-The following table lists the configurable parameters of the Qualys Cloud Agent chart.
-
-### Image Configuration
-
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `image.repository` | Image repository | `nelssec/qualys-cloud-agent` |
-| `image.tag` | Image tag | `latest` |
-| `image.pullPolicy` | Image pull policy | `Always` |
-
-### Namespace Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `namespace.create` | Create namespace | `true` |
-| `namespace.name` | Namespace name | `qualys` |
-
-### Qualys Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `config.serverUri` | Qualys server URI | `https://qagpublic.qg2.apps.qualys.com/CloudAgent/` |
-| `config.logLevel` | Agent log level | `3` |
-| `secrets.existingSecret` | Name of existing secret with credentials | `qualys-credentials` |
-
-### Auto-Update Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `autoUpdate.enabled` | Enable automatic updates | `true` |
-| `autoUpdate.schedule` | Cron schedule for updates | `0 */6 * * *` |
-| `autoUpdate.successfulJobsHistoryLimit` | Successful jobs history | `3` |
-| `autoUpdate.failedJobsHistoryLimit` | Failed jobs history | `3` |
-| `autoUpdate.restartPolicy` | Job restart policy | `OnFailure` |
-
-### Health Checks
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `healthChecks.enabled` | Enable health probes | `true` |
-| `healthChecks.liveness.initialDelaySeconds` | Liveness initial delay | `60` |
-| `healthChecks.liveness.periodSeconds` | Liveness check period | `30` |
-| `healthChecks.readiness.initialDelaySeconds` | Readiness initial delay | `30` |
-| `healthChecks.readiness.periodSeconds` | Readiness check period | `10` |
-
-### Resources
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
+| `image.repository` | Container image | `nelssec/qualys-agent-bootstrapper` |
+| `image.tag` | Image tag | `v2.0.0` |
+| `image.pullPolicy` | Pull policy | `IfNotPresent` |
+| `credentials.activationId` | Qualys Activation ID | `""` |
+| `credentials.customerId` | Qualys Customer ID | `""` |
+| `credentials.existingSecret` | Use existing secret | `""` |
+| `config.serverUri` | Qualys platform endpoint | `""` |
+| `config.logLevel` | Log verbosity (0-5) | `"3"` |
+| `networkPolicy.enabled` | Enable NetworkPolicy | `true` |
+| `resources.requests.cpu` | CPU request | `100m` |
+| `resources.requests.memory` | Memory request | `128Mi` |
 | `resources.limits.cpu` | CPU limit | `500m` |
 | `resources.limits.memory` | Memory limit | `512Mi` |
-| `resources.requests.cpu` | CPU request | `250m` |
-| `resources.requests.memory` | Memory request | `256Mi` |
-
-### Update Strategy
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `updateStrategy.type` | Update strategy type | `RollingUpdate` |
-| `updateStrategy.rollingUpdate.maxUnavailable` | Max unavailable pods | `25%` |
-
-### Pod Disruption Budget
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `podDisruptionBudget.enabled` | Enable PDB | `true` |
-| `podDisruptionBudget.minAvailable` | Minimum available pods | `1` |
-
-### Other
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `hostPID` | Use host PID namespace | `true` |
-| `hostNetwork` | Use host network | `false` |
+| `nodeSelector` | Node selector | `kubernetes.io/os: linux` |
 | `tolerations` | Pod tolerations | Tolerates all taints |
-| `nodeSelector` | Node selector | `{}` |
-| `affinity` | Pod affinity | `{}` |
 
-## Upgrading
+## Qualys Platform Endpoints
 
-### Upgrading the Chart
+| Region | Server URI |
+|--------|------------|
+| US Platform 1 | `https://qagpublic.qg1.apps.qualys.com/CloudAgent/` |
+| US Platform 2 | `https://qagpublic.qg2.apps.qualys.com/CloudAgent/` |
+| US Platform 3 | `https://qagpublic.qg3.apps.qualys.com/CloudAgent/` |
+| EU Platform 1 | `https://qagpublic.qg1.apps.qualys.eu/CloudAgent/` |
+| EU Platform 2 | `https://qagpublic.qg2.apps.qualys.eu/CloudAgent/` |
+| India | `https://qagpublic.qg1.apps.qualys.in/CloudAgent/` |
+| Canada | `https://qagpublic.qg1.apps.qualys.ca/CloudAgent/` |
+| Australia | `https://qagpublic.qg1.apps.qualys.com.au/CloudAgent/` |
 
-```bash
-helm upgrade qualys-ca ./charts/qualys-ca -n qualys
+Find your platform: https://www.qualys.com/platform-identification/
+
+## How It Works
+
+```mermaid
+stateDiagram-v2
+    [*] --> CheckAgent
+    CheckAgent --> Running: Already installed
+    CheckAgent --> Detect: Not installed
+    Running --> Sleep
+
+    Detect --> SelectPackage
+    SelectPackage --> Install
+    Install --> Configure
+    Configure --> StartService
+    StartService --> Activate
+    Activate --> Sleep
+    Sleep --> [*]
 ```
 
-### Upgrading with Custom Values
+1. **DaemonSet deploys** a bootstrapper pod on each Linux node
+2. **Pod detects** host OS (Ubuntu, RHEL, etc.) and architecture (x64, ARM64)
+3. **Selects package** (DEB or RPM) matching the host
+4. **Installs agent** on the host using nsenter
+5. **Configures** agent with credentials from Kubernetes secrets
+6. **Starts service** and verifies activation
+7. **Pod sleeps** while agent runs on host
 
-```bash
-helm upgrade qualys-ca ./charts/qualys-ca -n qualys -f custom-values.yaml
+## Security
+
+```mermaid
+flowchart LR
+    subgraph controls["Security Controls"]
+        PSS[Pod Security Standards]
+        NP[NetworkPolicy]
+        RBAC[Minimal RBAC]
+    end
+
+    subgraph access["Host Access"]
+        MM[Minimal Mounts]
+        NS[nsenter]
+    end
+
+    controls --> access
 ```
 
-## Uninstallation
+- **Pod Security Standards**: Namespace enforces `privileged` PSS
+- **NetworkPolicy**: Egress restricted to HTTPS (443) and DNS (53)
+- **Minimal Mounts**: Specific paths only, not full filesystem
+- **Credentials Protected**: Never logged, config files mode 600
+- **RBAC**: Read-only access to nodes and pods
+
+## Verify Installation
 
 ```bash
-helm uninstall qualys-ca -n qualys
+# Check DaemonSet
+kubectl get daemonset -n qualys
 
-# Optionally delete the namespace
+# Check pods
+kubectl get pods -n qualys -o wide
+
+# View logs
+kubectl logs -n qualys -l app.kubernetes.io/name=qualys-ca
+
+# Check agent on host
+kubectl exec -n qualys <pod-name> -- \
+  nsenter --target 1 --mount --uts --ipc --net --pid -- \
+  systemctl status qualys-cloud-agent
+```
+
+## Upgrade
+
+```bash
+helm upgrade qualys-agent ./charts/qualys-ca \
+  --namespace qualys \
+  --reuse-values \
+  --set image.tag=v2.1.0
+```
+
+## Uninstall
+
+```bash
+helm uninstall qualys-agent --namespace qualys
 kubectl delete namespace qualys
 ```
 
+**Note**: Uninstalling the Helm chart does not remove the Qualys agent from nodes. The agent persists on the host.
+
 ## Troubleshooting
 
-### Check Pod Status
+| Issue | Solution |
+|-------|----------|
+| Pod pending | Check node selector and taints |
+| CrashLoopBackOff | Verify credentials secret exists |
+| Agent not activating | Check Server URI matches your platform |
+| Permission denied | Verify privileged security context |
+
+### Debug Commands
 
 ```bash
-kubectl get pods -n qualys -o wide
-kubectl describe pod <pod-name> -n qualys
+# Describe pod
+kubectl describe pod -n qualys <pod-name>
+
+# View logs
+kubectl logs -n qualys <pod-name> --timestamps
+
+# Shell into pod
+kubectl exec -it -n qualys <pod-name> -- /bin/bash
+
+# Check host agent
+kubectl exec -n qualys <pod-name> -- \
+  nsenter --target 1 --mount --uts --ipc --net --pid -- \
+  journalctl -u qualys-cloud-agent --no-pager -n 50
 ```
-
-### View Pod Logs
-
-```bash
-kubectl logs -n qualys <pod-name>
-kubectl logs -n qualys <pod-name> --previous  # Previous container logs
-```
-
-### Check DaemonSet Status
-
-```bash
-kubectl get daemonset -n qualys
-kubectl describe daemonset qualys-ca -n qualys
-```
-
-### Verify Credentials Secret
-
-```bash
-kubectl get secret qualys-credentials -n qualys
-kubectl describe secret qualys-credentials -n qualys
-```
-
-### Manual Image Update
-
-If you need to manually trigger an update:
-
-```bash
-kubectl rollout restart daemonset/qualys-ca -n qualys
-kubectl rollout status daemonset/qualys-ca -n qualys
-```
-
-### Check Auto-Update CronJob
-
-```bash
-# View CronJob configuration
-kubectl get cronjob qualys-ca-auto-update -n qualys -o yaml
-
-# Manually trigger the CronJob
-kubectl create job --from=cronjob/qualys-ca-auto-update manual-update -n qualys
-
-# View job logs
-kubectl logs -n qualys job/manual-update
-```
-
-## Security Considerations
-
-- The agent requires `privileged: true` to perform security scans
-- The agent uses `hostPID: true` to access host processes
-- Credentials are stored in Kubernetes secrets
-- RBAC is configured with minimal required permissions
-- The auto-update service account only has permissions to restart the DaemonSet
 
 ## Support
 
-For issues and questions:
 - GitHub Issues: https://github.com/nelssec/qualys-ca-helm/issues
 - Qualys Support: https://www.qualys.com/support/
 

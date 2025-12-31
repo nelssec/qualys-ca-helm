@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  namespace: {{ .Values.namespace.name }}
   name: {{ include "qualys-ca.fullname" . }}
+  namespace: {{ .Values.namespace.name }}
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
 spec:
@@ -13,60 +13,182 @@ spec:
     {{- toYaml .Values.updateStrategy | nindent 4 }}
   template:
     metadata:
-  namespace: {{ .Values.namespace.name }}
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
         {{- include "qualys-ca.selectorLabels" . | nindent 8 }}
     spec:
-      hostPID: {{ .Values.hostPID }}
-      restartPolicy: Always
       serviceAccountName: {{ include "qualys-ca.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: ACTIVATIONID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.existingSecret }}
-                  key: activationId
-            - name: CUSTOMERID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.existingSecret }}
-                  key: customerId
-          envFrom:
-            - configMapRef:
-                name: {{ include "qualys-ca.fullname" . }}-config
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          {{- if .Values.healthChecks.enabled }}
-          livenessProbe:
-            {{- toYaml .Values.healthChecks.liveness | nindent 12 }}
-          readinessProbe:
-            {{- toYaml .Values.healthChecks.readiness | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            {{- toYaml .Values.volumeMounts | nindent 12 }}
-      volumes:
-        {{- toYaml .Values.volumes | nindent 8 }}
+      automountServiceAccountToken: false
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: qualys-agent-installer
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          privileged: true
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: true
+          seccompProfile:
+            type: Unconfined
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SYS_CHROOT
+              - SYS_PTRACE
+            drop:
+              - NET_RAW
+              - MKNOD
+        env:
+        - name: ACTIVATION_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "qualys-ca.secretName" . }}
+              key: ACTIVATION_ID
+        - name: CUSTOMER_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "qualys-ca.secretName" . }}
+              key: CUSTOMER_ID
+        - name: SERVER_URI
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: SERVER_URI
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: LOG_LEVEL
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: host-tmp
+          mountPath: /host/tmp
+        - name: host-etc
+          mountPath: /host/etc
+        - name: host-var
+          mountPath: /host/var
+        - name: host-usr
+          mountPath: /host/usr
+        - name: host-opt
+          mountPath: /host/opt
+        - name: host-lib
+          mountPath: /host/lib
+        - name: host-lib64
+          mountPath: /host/lib64
+        - name: host-run
+          mountPath: /host/run
+        - name: host-proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: host-sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: host-bin
+          mountPath: /host/bin
+          readOnly: true
+        - name: host-sbin
+          mountPath: /host/sbin
+          readOnly: true
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "test -S /host/run/systemd/private && cat /host/proc/1/comm >/dev/null 2>&1"
+          initialDelaySeconds: 120
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "test -f /host/etc/qualys/cloud-agent/qualys-cloud-agent.conf"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - "nsenter --target 1 --mount --uts --ipc --net --pid -- systemctl stop qualys-cloud-agent 2>/dev/null || true"
+      volumes:
+      - name: host-tmp
+        hostPath:
+          path: /tmp
+          type: Directory
+      - name: host-etc
+        hostPath:
+          path: /etc
+          type: Directory
+      - name: host-var
+        hostPath:
+          path: /var
+          type: Directory
+      - name: host-usr
+        hostPath:
+          path: /usr
+          type: Directory
+      - name: host-opt
+        hostPath:
+          path: /opt
+          type: DirectoryOrCreate
+      - name: host-lib
+        hostPath:
+          path: /lib
+          type: Directory
+      - name: host-lib64
+        hostPath:
+          path: /lib64
+          type: DirectoryOrCreate
+      - name: host-run
+        hostPath:
+          path: /run
+          type: Directory
+      - name: host-proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: host-sys
+        hostPath:
+          path: /sys
+          type: Directory
+      - name: host-bin
+        hostPath:
+          path: /bin
+          type: Directory
+      - name: host-sbin
+        hostPath:
+          path: /sbin
+          type: Directory
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      terminationGracePeriodSeconds: 30

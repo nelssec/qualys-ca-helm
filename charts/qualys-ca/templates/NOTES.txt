@@ -1,0 +1,26 @@
+Qualys Cloud Agent Bootstrapper has been deployed!
+
+The agent will be installed on all Linux nodes in your cluster.
+
+To verify the deployment:
+
+  kubectl get daemonset -n {{ .Values.namespace.name }}
+  kubectl get pods -n {{ .Values.namespace.name }} -o wide
+
+To view installation logs:
+
+  kubectl logs -n {{ .Values.namespace.name }} -l app.kubernetes.io/name={{ include "qualys-ca.name" . }}
+
+To check agent status on a node:
+
+  kubectl exec -n {{ .Values.namespace.name }} <pod-name> -- \
+    nsenter --target 1 --mount --uts --ipc --net --pid -- \
+    systemctl status qualys-cloud-agent
+
+Configuration:
+  - Server URI: {{ .Values.config.serverUri }}
+  - Log Level: {{ .Values.config.logLevel }}
+  - Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+For more information, visit:
+  https://github.com/nelssec/qualys-ca-helm

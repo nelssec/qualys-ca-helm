@@ -5,6 +5,31 @@ All notable changes to the Qualys Cloud Agent Helm chart will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2024-12-31
+
+### Changed
+- **Architecture**: Switched to bootstrapper model - installs agent on host nodes instead of running in container
+- **Image**: Now uses `nelssec/qualys-agent-bootstrapper:v2.0.0`
+- **Installation Method**: Uses nsenter to install packages directly on host
+
+### Added
+- **Multi-Architecture**: Supports both x86_64 and ARM64 nodes
+- **NetworkPolicy**: Egress restricted to HTTPS (443) and DNS (53) only
+- **Pod Security Standards**: Namespace labels for privileged PSS enforcement
+- **Secret Template**: Can now create secrets via Helm values or use existing secrets
+- **RBAC**: ClusterRole and ClusterRoleBinding for node/pod read access
+
+### Removed
+- **CronJob Auto-Update**: No longer needed - agent updates via new image builds
+- **PodDisruptionBudget**: Simplified deployment model
+- **Auto-Update ServiceAccount**: Removed with CronJob
+
+### Security
+- Credentials never logged (redacted output)
+- Config files set to mode 600
+- Minimal host mounts (not full filesystem)
+- Dropped NET_RAW and MKNOD capabilities
+
 ## [2.0.0] - 2025-11-17
 
 ### Added

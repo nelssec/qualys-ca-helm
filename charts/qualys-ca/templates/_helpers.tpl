@@ -40,3 +40,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- define "qualys-ca.secretName" -}}
+{{- if .Values.credentials.existingSecret }}
+{{- .Values.credentials.existingSecret }}
+{{- else }}
+{{- include "qualys-ca.fullname" . }}-credentials
+{{- end }}
+{{- end }}
