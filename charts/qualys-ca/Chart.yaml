@@ -2,8 +2,8 @@ apiVersion: v2
 name: qualys-ca
 description: Qualys Cloud Agent Kubernetes Bootstrapper - Installs agent on worker nodes
 type: application
-version: 3.0.1
-appVersion: "2.0.0"
+version: 3.1.0
+appVersion: "2.1.0"
 keywords:
   - qualys
   - security

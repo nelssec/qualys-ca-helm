@@ -53,6 +53,7 @@ spec:
               - SYS_CHROOT
               - SYS_PTRACE
         env:
+        # Required credentials from Secret
         - name: ACTIVATION_ID
           valueFrom:
             secretKeyRef:
@@ -63,6 +64,8 @@ spec:
             secretKeyRef:
               name: {{ include "qualys-ca.secretName" . }}
               key: CUSTOMER_ID
+
+        # Required configuration from ConfigMap
         - name: SERVER_URI
           valueFrom:
             configMapKeyRef:
@@ -73,6 +76,160 @@ spec:
             configMapKeyRef:
               name: {{ include "qualys-ca.fullname" . }}-config
               key: LOG_LEVEL
+
+        # Optional logging settings
+        {{- if .Values.config.logFileDir }}
+        - name: LOG_FILE_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: LOG_FILE_DIR
+        {{- end }}
+        {{- if .Values.config.logDestType }}
+        - name: LOG_DEST_TYPE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: LOG_DEST_TYPE
+        {{- end }}
+        {{- if .Values.config.logCompression }}
+        - name: LOG_COMPRESSION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: LOG_COMPRESSION
+        {{- end }}
+
+        # Performance settings
+        {{- if .Values.config.cmdMaxTimeOut }}
+        - name: CMD_MAX_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: CMD_MAX_TIMEOUT
+        {{- end }}
+        {{- if .Values.config.processPriority }}
+        - name: PROCESS_PRIORITY
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: PROCESS_PRIORITY
+        {{- end }}
+        {{- if .Values.config.scanDelayVM }}
+        - name: SCAN_DELAY_VM
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: SCAN_DELAY_VM
+        {{- end }}
+        {{- if .Values.config.scanDelayPC }}
+        - name: SCAN_DELAY_PC
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: SCAN_DELAY_PC
+        {{- end }}
+        {{- if .Values.config.maxRandomScanIntervalVM }}
+        - name: MAX_RANDOM_SCAN_INTERVAL_VM
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: MAX_RANDOM_SCAN_INTERVAL_VM
+        {{- end }}
+        {{- if .Values.config.maxRandomScanIntervalPC }}
+        - name: MAX_RANDOM_SCAN_INTERVAL_PC
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: MAX_RANDOM_SCAN_INTERVAL_PC
+        {{- end }}
+
+        # Permission settings
+        {{- if .Values.config.useSudo }}
+        - name: USE_SUDO
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: USE_SUDO
+        {{- end }}
+        {{- if .Values.config.sudoCommand }}
+        - name: SUDO_COMMAND
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: SUDO_COMMAND
+        {{- end }}
+        {{- if .Values.config.user }}
+        - name: AGENT_USER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: AGENT_USER
+        {{- end }}
+        {{- if .Values.config.group }}
+        - name: AGENT_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: AGENT_GROUP
+        {{- end }}
+
+        # Other settings
+        {{- if .Values.config.useAuditDispatcher }}
+        - name: USE_AUDIT_DISPATCHER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: USE_AUDIT_DISPATCHER
+        {{- end }}
+        {{- if .Values.config.hostIdSearchDir }}
+        - name: HOST_ID_SEARCH_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: HOST_ID_SEARCH_DIR
+        {{- end }}
+
+        # Proxy settings from ConfigMap
+        {{- if .Values.proxy.qualysProxyOrder }}
+        - name: QUALYS_PROXY_ORDER
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: QUALYS_PROXY_ORDER
+        {{- end }}
+        {{- if .Values.proxy.proxyFailOpen }}
+        - name: PROXY_FAIL_OPEN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "qualys-ca.fullname" . }}-config
+              key: PROXY_FAIL_OPEN
+        {{- end }}
+
+        # Proxy URLs from Secret
+        {{- if .Values.proxy.qualysHttpsProxy }}
+        - name: QUALYS_HTTPS_PROXY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "qualys-ca.secretName" . }}
+              key: QUALYS_HTTPS_PROXY
+        {{- end }}
+        {{- if .Values.proxy.httpsProxy }}
+        - name: HTTPS_PROXY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "qualys-ca.secretName" . }}
+              key: HTTPS_PROXY
+        {{- end }}
+        {{- if .Values.proxy.caCertBundle }}
+        - name: CA_CERT_BUNDLE
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "qualys-ca.secretName" . }}
+              key: CA_CERT_BUNDLE
+        {{- end }}
+
+        # Kubernetes metadata
         - name: NODE_NAME
           valueFrom:
             fieldRef:
@@ -85,6 +242,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+
         volumeMounts:
         - name: host-tmp
           mountPath: /host/tmp

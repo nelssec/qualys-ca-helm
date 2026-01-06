@@ -4,17 +4,59 @@ namespace:
 
 image:
   repository: nelssec/qualys-agent-bootstrapper
-  tag: v2.0.0
+  tag: v2.1.0
   pullPolicy: IfNotPresent
 
+# Required credentials from Qualys subscription
 credentials:
   activationId: ""
   customerId: ""
   existingSecret: ""
 
+# Agent configuration settings
 config:
+  # Required: Qualys platform URL (e.g., https://qagpublic.qg1.apps.qualys.com/CloudAgent/)
   serverUri: ""
-  logLevel: "3"
+
+  # Logging settings
+  logLevel: "3"              # 0=fatal, 1=error, 2=warning, 3=info, 4=debug, 5=trace
+  logFileDir: ""             # Default: /var/log/qualys/
+  logDestType: ""            # "file" or "syslog"
+  logCompression: ""         # 0 or 1 - compress logs on rollover
+
+  # Performance and behavior settings
+  cmdMaxTimeOut: ""          # Max command execution time in seconds (default: 1800)
+  processPriority: ""        # Linux niceness -20 to 19 (default: 0)
+  scanDelayVM: ""            # Delay before VM scan in seconds (0-43200)
+  scanDelayPC: ""            # Delay before PC scan in seconds (0-43200)
+  maxRandomScanIntervalVM: "" # Random interval for VM scans (0-43200)
+  maxRandomScanIntervalPC: "" # Random interval for PC scans (0-43200)
+
+  # Permission settings
+  useSudo: ""                # 0 or 1 - run commands with sudo
+  sudoCommand: ""            # Custom privilege escalation command (e.g., pbrun)
+  user: ""                   # Username for daemon execution
+  group: ""                  # Group for daemon execution
+
+  # Other settings
+  useAuditDispatcher: ""     # 0 or 1 - enable FIM with auditd
+  hostIdSearchDir: ""        # Directory containing host ID file (default: /etc/)
+
+# Proxy configuration
+# Proxy URL format: https://[username:password@]host[:port]
+# For credentials with special characters, use URL encoding
+proxy:
+  # Use qualysHttpsProxy for Qualys-only traffic, or httpsProxy for all traffic
+  qualysHttpsProxy: ""       # Proxy URL for Qualys platform communication only
+  httpsProxy: ""             # System-wide HTTPS proxy (used for all commands)
+
+  # Multi-proxy settings
+  qualysProxyOrder: ""       # "sequential" or "random" for multi-proxy failover
+  proxyFailOpen: ""          # 0 or 1 - attempt direct connection if all proxies fail
+
+  # Custom CA certificate bundle for proxy (base64 encoded)
+  # Place at /etc/qualys/cloud-agent/cert/ca-bundle.crt
+  caCertBundle: ""
 
 resources:
   requests:
@@ -39,6 +81,14 @@ priorityClassName: "system-node-critical"
 
 networkPolicy:
   enabled: true
+  # Additional egress rules for proxy servers
+  additionalEgressRules: []
+  # - ports:
+  #   - protocol: TCP
+  #     port: 8080
+  #   to:
+  #   - ipBlock:
+  #       cidr: 10.0.0.0/8
 
 serviceAccount:
   create: true

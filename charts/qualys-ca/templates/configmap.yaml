@@ -6,5 +6,67 @@ metadata:
   labels:
     {{- include "qualys-ca.labels" . | nindent 4 }}
 data:
+  # Required settings
   SERVER_URI: {{ .Values.config.serverUri | quote }}
+
+  # Logging settings
   LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  {{- if .Values.config.logFileDir }}
+  LOG_FILE_DIR: {{ .Values.config.logFileDir | quote }}
+  {{- end }}
+  {{- if .Values.config.logDestType }}
+  LOG_DEST_TYPE: {{ .Values.config.logDestType | quote }}
+  {{- end }}
+  {{- if .Values.config.logCompression }}
+  LOG_COMPRESSION: {{ .Values.config.logCompression | quote }}
+  {{- end }}
+
+  # Performance settings
+  {{- if .Values.config.cmdMaxTimeOut }}
+  CMD_MAX_TIMEOUT: {{ .Values.config.cmdMaxTimeOut | quote }}
+  {{- end }}
+  {{- if .Values.config.processPriority }}
+  PROCESS_PRIORITY: {{ .Values.config.processPriority | quote }}
+  {{- end }}
+  {{- if .Values.config.scanDelayVM }}
+  SCAN_DELAY_VM: {{ .Values.config.scanDelayVM | quote }}
+  {{- end }}
+  {{- if .Values.config.scanDelayPC }}
+  SCAN_DELAY_PC: {{ .Values.config.scanDelayPC | quote }}
+  {{- end }}
+  {{- if .Values.config.maxRandomScanIntervalVM }}
+  MAX_RANDOM_SCAN_INTERVAL_VM: {{ .Values.config.maxRandomScanIntervalVM | quote }}
+  {{- end }}
+  {{- if .Values.config.maxRandomScanIntervalPC }}
+  MAX_RANDOM_SCAN_INTERVAL_PC: {{ .Values.config.maxRandomScanIntervalPC | quote }}
+  {{- end }}
+
+  # Permission settings
+  {{- if .Values.config.useSudo }}
+  USE_SUDO: {{ .Values.config.useSudo | quote }}
+  {{- end }}
+  {{- if .Values.config.sudoCommand }}
+  SUDO_COMMAND: {{ .Values.config.sudoCommand | quote }}
+  {{- end }}
+  {{- if .Values.config.user }}
+  AGENT_USER: {{ .Values.config.user | quote }}
+  {{- end }}
+  {{- if .Values.config.group }}
+  AGENT_GROUP: {{ .Values.config.group | quote }}
+  {{- end }}
+
+  # Other settings
+  {{- if .Values.config.useAuditDispatcher }}
+  USE_AUDIT_DISPATCHER: {{ .Values.config.useAuditDispatcher | quote }}
+  {{- end }}
+  {{- if .Values.config.hostIdSearchDir }}
+  HOST_ID_SEARCH_DIR: {{ .Values.config.hostIdSearchDir | quote }}
+  {{- end }}
+
+  # Proxy settings (non-sensitive)
+  {{- if .Values.proxy.qualysProxyOrder }}
+  QUALYS_PROXY_ORDER: {{ .Values.proxy.qualysProxyOrder | quote }}
+  {{- end }}
+  {{- if .Values.proxy.proxyFailOpen }}
+  PROXY_FAIL_OPEN: {{ .Values.proxy.proxyFailOpen | quote }}
+  {{- end }}

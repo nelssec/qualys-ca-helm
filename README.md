@@ -100,16 +100,67 @@ helm install qualys-agent ./charts/qualys-ca \
 
 ## Configuration
 
+### Required Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `credentials.activationId` | Qualys Activation ID | `""` |
+| `credentials.customerId` | Qualys Customer ID | `""` |
+| `config.serverUri` | Qualys platform endpoint | `""` |
+
+### Image Settings
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `image.repository` | Container image | `nelssec/qualys-agent-bootstrapper` |
-| `image.tag` | Image tag | `v2.0.0` |
+| `image.tag` | Image tag | `v2.1.0` |
 | `image.pullPolicy` | Pull policy | `IfNotPresent` |
-| `credentials.activationId` | Qualys Activation ID | `""` |
-| `credentials.customerId` | Qualys Customer ID | `""` |
+
+### Logging Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `config.logLevel` | Log verbosity (0=fatal to 5=trace) | `"3"` |
+| `config.logFileDir` | Log directory | `/var/log/qualys/` |
+| `config.logDestType` | `file` or `syslog` | `file` |
+| `config.logCompression` | Compress logs (0 or 1) | `0` |
+
+### Performance Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `config.cmdMaxTimeOut` | Command timeout (seconds) | `1800` |
+| `config.processPriority` | Nice value (-20 to 19) | `0` |
+| `config.scanDelayVM` | VM scan delay (0-43200s) | `0` |
+| `config.scanDelayPC` | PC scan delay (0-43200s) | `0` |
+
+### Proxy Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `proxy.qualysHttpsProxy` | Proxy for Qualys traffic only | `""` |
+| `proxy.httpsProxy` | System-wide HTTPS proxy | `""` |
+| `proxy.proxyFailOpen` | Direct connection on proxy failure (0 or 1) | `0` |
+| `proxy.qualysProxyOrder` | `sequential` or `random` | `sequential` |
+| `proxy.caCertBundle` | Custom CA cert (base64 encoded) | `""` |
+
+Proxy URL format: `https://[username:password@]host[:port]`
+
+### Permission Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `config.useSudo` | Run with sudo (0 or 1) | `0` |
+| `config.sudoCommand` | Custom sudo command (e.g., `pbrun`) | `""` |
+| `config.user` | Daemon username | `root` |
+| `config.group` | Daemon group | `root` |
+| `config.useAuditDispatcher` | FIM with auditd (0 or 1) | `0` |
+
+### Kubernetes Settings
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
 | `credentials.existingSecret` | Use existing secret | `""` |
-| `config.serverUri` | Qualys platform endpoint | `""` |
-| `config.logLevel` | Log verbosity (0-5) | `"3"` |
 | `networkPolicy.enabled` | Enable NetworkPolicy | `true` |
 | `priorityClassName` | Pod priority class | `system-node-critical` |
 | `resources.requests.cpu` | CPU request | `100m` |
@@ -227,6 +278,13 @@ helm upgrade qualys-agent ./charts/qualys-ca \
   --namespace qualys \
   --reuse-values \
   --set image.tag=v2.1.0
+
+# Or with proxy configuration
+helm upgrade qualys-agent ./charts/qualys-ca \
+  --namespace qualys \
+  --reuse-values \
+  --set proxy.qualysHttpsProxy="https://proxy.example.com:8080" \
+  --set proxy.proxyFailOpen="1"
 ```
 
 ## Uninstall
