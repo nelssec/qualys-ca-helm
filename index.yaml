@@ -21,6 +21,50 @@ entries:
       category: Security
       licenses: Apache-2.0
     apiVersion: v2
+    appVersion: 2.1.0
+    created: "2026-01-06T19:22:09.476106586Z"
+    description: Qualys Cloud Agent Kubernetes Bootstrapper - Installs agent on worker
+      nodes
+    digest: 8eeff9a48ea6fb07c32400d5c33f7d7727c6d5fee72c827461f86d52fb4aaf9a
+    home: https://github.com/nelssec/qualys-ca-helm
+    keywords:
+    - qualys
+    - security
+    - vulnerability
+    - scanning
+    - agent
+    - bootstrapper
+    maintainers:
+    - email: anelson@qualys.com
+      name: Andrew Nelson
+    name: qualys-ca
+    sources:
+    - https://github.com/nelssec/qualys-ca-helm
+    - https://github.com/nelssec/qualys-cloudagentbuilder
+    type: application
+    urls:
+    - https://github.com/nelssec/qualys-ca-helm/releases/download/qualys-ca-3.1.0/qualys-ca-3.1.0.tgz
+    version: 3.1.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: changed
+          description: Switched to bootstrapper model - installs agent on host nodes
+        - kind: added
+          description: Multi-architecture support (x86_64 and ARM64)
+        - kind: added
+          description: NetworkPolicy for egress restrictions
+        - kind: added
+          description: Pod Security Standards labels
+        - kind: added
+          description: Minimal mount strategy for security
+        - kind: removed
+          description: CronJob auto-update (agent updates via new image builds)
+        - kind: security
+          description: Credentials never logged, config files mode 600
+      artifacthub.io/prerelease: "false"
+      category: Security
+      licenses: Apache-2.0
+    apiVersion: v2
     appVersion: 2.0.0
     created: "2026-01-05T21:32:56.512461991Z"
     description: Qualys Cloud Agent Kubernetes Bootstrapper - Installs agent on worker
@@ -137,4 +181,4 @@ entries:
     urls:
     - https://github.com/nelssec/qualys-ca-helm/releases/download/qualys-ca-1.0.5/qualys-ca-1.0.5.tgz
     version: 1.0.5
-generated: "2026-01-05T21:32:56.512478311Z"
+generated: "2026-01-06T19:22:09.476133727Z"
