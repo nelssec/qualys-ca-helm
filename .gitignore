@@ -1,0 +1,20 @@
+# Helm packages (managed by chart-releaser)
+*.tgz
+index.yaml
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code local settings
+.claude/
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak

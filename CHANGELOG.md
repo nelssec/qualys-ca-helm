@@ -5,6 +5,37 @@ All notable changes to the Qualys Cloud Agent Helm chart will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-01-06
+
+### Added
+- **Proxy Support**: Full proxy configuration for enterprise environments
+  - `proxy.qualysHttpsProxy` - Proxy for Qualys platform traffic only
+  - `proxy.httpsProxy` - System-wide HTTPS proxy
+  - `proxy.proxyFailOpen` - Attempt direct connection on proxy failure
+  - `proxy.qualysProxyOrder` - Sequential or random proxy selection
+  - `proxy.caCertBundle` - Custom CA certificate for proxy SSL/TLS
+- **Logging Settings**: Extended logging configuration
+  - `config.logFileDir` - Custom log directory
+  - `config.logDestType` - File or syslog output
+  - `config.logCompression` - Log compression on rollover
+- **Performance Settings**: Agent behavior tuning
+  - `config.cmdMaxTimeOut` - Command execution timeout
+  - `config.processPriority` - Linux nice value
+  - `config.scanDelayVM` / `config.scanDelayPC` - Scan delays
+  - `config.maxRandomScanIntervalVM` / `config.maxRandomScanIntervalPC` - Random scan intervals
+- **Permission Settings**: Privilege escalation options
+  - `config.useSudo` - Run commands with sudo
+  - `config.sudoCommand` - Custom sudo command (e.g., pbrun)
+  - `config.user` / `config.group` - Daemon user/group
+- **Other Settings**: Additional agent options
+  - `config.useAuditDispatcher` - FIM with auditd integration
+  - `config.hostIdSearchDir` - Host ID file location
+
+### Changed
+- **Image**: Updated to `nelssec/qualys-agent-bootstrapper:v2.1.0`
+- **Base OS**: Ubuntu 22.04 (unpinned for automatic security updates)
+- **Templates**: ConfigMap, Secret, and DaemonSet updated to pass all new environment variables
+
 ## [3.0.0] - 2024-12-31
 
 ### Changed
