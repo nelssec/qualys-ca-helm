@@ -1,3 +1,7 @@
+# Privilege mode controls the security posture of the bootstrapper pod.
+# Options: unprivileged, minimal, standard, privileged
+privilegeMode: standard
+
 namespace:
   create: true
   name: qualys

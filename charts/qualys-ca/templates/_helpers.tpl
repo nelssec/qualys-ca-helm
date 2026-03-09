@@ -48,3 +48,61 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- include "qualys-ca.fullname" . }}-credentials
 {{- end }}
 {{- end }}
+
+{{/*
+Security context based on privilege mode.
+*/}}
+{{- define "qualys-ca.securityContext" -}}
+{{- if eq .Values.privilegeMode "unprivileged" }}
+privileged: false
+runAsNonRoot: true
+runAsUser: 65534
+readOnlyRootFilesystem: true
+allowPrivilegeEscalation: false
+seccompProfile:
+  type: RuntimeDefault
+capabilities:
+  drop: ["ALL"]
+  add: ["DAC_READ_SEARCH"]
+{{- else if eq .Values.privilegeMode "minimal" }}
+privileged: false
+runAsNonRoot: false
+readOnlyRootFilesystem: false
+allowPrivilegeEscalation: false
+seccompProfile:
+  type: RuntimeDefault
+capabilities:
+  drop: ["ALL"]
+  add: ["SYS_PTRACE"]
+{{- else if eq .Values.privilegeMode "standard" }}
+privileged: false
+runAsNonRoot: false
+readOnlyRootFilesystem: false
+allowPrivilegeEscalation: true
+seccompProfile:
+  type: Unconfined
+capabilities:
+  drop: ["ALL"]
+  add: ["SYS_ADMIN", "SYS_PTRACE", "SYS_CHROOT", "DAC_READ_SEARCH"]
+{{- else }}
+privileged: true
+runAsUser: 0
+runAsNonRoot: false
+readOnlyRootFilesystem: false
+allowPrivilegeEscalation: true
+seccompProfile:
+  type: Unconfined
+capabilities:
+  drop: ["ALL"]
+  add: ["SYS_ADMIN", "SYS_CHROOT", "SYS_PTRACE"]
+{{- end }}
+{{- end }}
+
+{{/*
+PSA level based on privilege mode.
+*/}}
+{{- define "qualys-ca.psaLevel" -}}
+{{- if eq .Values.privilegeMode "unprivileged" }}baseline
+{{- else }}privileged
+{{- end }}
+{{- end }}

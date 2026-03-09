@@ -38,20 +38,7 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         securityContext:
-          privileged: true
-          runAsUser: 0
-          runAsNonRoot: false
-          allowPrivilegeEscalation: true
-          readOnlyRootFilesystem: false
-          seccompProfile:
-            type: Unconfined
-          capabilities:
-            drop:
-              - ALL
-            add:
-              - SYS_ADMIN
-              - SYS_CHROOT
-              - SYS_PTRACE
+          {{- include "qualys-ca.securityContext" . | nindent 10 }}
         env:
         # Required credentials from Secret
         - name: ACTIVATION_ID
@@ -246,20 +233,44 @@ spec:
         volumeMounts:
         - name: host-tmp
           mountPath: /host/tmp
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-etc
           mountPath: /host/etc
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-var
           mountPath: /host/var
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-usr
           mountPath: /host/usr
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-opt
           mountPath: /host/opt
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-lib
           mountPath: /host/lib
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-lib64
           mountPath: /host/lib64
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-run
           mountPath: /host/run
+          {{- if eq .Values.privilegeMode "unprivileged" }}
+          readOnly: true
+          {{- end }}
         - name: host-proc
           mountPath: /host/proc
           readOnly: true

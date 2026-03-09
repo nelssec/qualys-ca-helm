@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["credentials", "config"],
+  "properties": {
+    "privilegeMode": {
+      "type": "string",
+      "enum": ["unprivileged", "minimal", "standard", "privileged"],
+      "default": "standard",
+      "description": "Security posture of the bootstrapper pod"
+    },
+    "credentials": {
+      "type": "object",
+      "properties": {
+        "activationId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Qualys activation ID"
+        },
+        "customerId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Qualys customer ID"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Name of a pre-existing Secret containing credentials"
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "required": ["serverUri"],
+      "properties": {
+        "serverUri": {
+          "type": "string",
+          "pattern": "^https://",
+          "description": "Qualys platform URL, must start with https://"
+        },
+        "logLevel": {
+          "type": "string",
+          "enum": ["0", "1", "2", "3", "4", "5"],
+          "default": "3",
+          "description": "Log verbosity: 0=fatal, 1=error, 2=warning, 3=info, 4=debug, 5=trace"
+        }
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "default": true
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

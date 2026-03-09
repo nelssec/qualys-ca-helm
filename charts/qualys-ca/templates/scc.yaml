@@ -1,0 +1,58 @@
+{{- if .Capabilities.APIVersions.Has "security.openshift.io/v1" }}
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: {{ include "qualys-ca.fullname" . }}
+  labels:
+    {{- include "qualys-ca.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/description: "SCC for {{ include "qualys-ca.fullname" . }} bootstrapper"
+allowHostDirVolumePlugin: true
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: true
+allowHostPorts: false
+allowPrivilegedContainer: {{ eq .Values.privilegeMode "privileged" }}
+allowPrivilegeEscalation: {{ ne .Values.privilegeMode "unprivileged" }}
+readOnlyRootFilesystem: {{ eq .Values.privilegeMode "unprivileged" }}
+{{- if eq .Values.privilegeMode "unprivileged" }}
+allowedCapabilities:
+  - DAC_READ_SEARCH
+requiredDropCapabilities:
+  - ALL
+{{- else if eq .Values.privilegeMode "minimal" }}
+allowedCapabilities:
+  - SYS_PTRACE
+requiredDropCapabilities:
+  - ALL
+{{- else if eq .Values.privilegeMode "standard" }}
+allowedCapabilities:
+  - SYS_ADMIN
+  - SYS_PTRACE
+  - SYS_CHROOT
+  - DAC_READ_SEARCH
+requiredDropCapabilities:
+  - ALL
+{{- else }}
+allowedCapabilities:
+  - "*"
+requiredDropCapabilities: []
+{{- end }}
+runAsUser:
+  type: {{ if eq .Values.privilegeMode "unprivileged" }}MustRunAsNonRoot{{ else }}RunAsAny{{ end }}
+seLinuxContext:
+  type: {{ if eq .Values.privilegeMode "unprivileged" }}MustRunAs{{ else }}RunAsAny{{ end }}
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+  - system:serviceaccount:{{ .Values.namespace.name }}:{{ include "qualys-ca.serviceAccountName" . }}
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - hostPath
+  - projected
+  - secret
+{{- end }}
